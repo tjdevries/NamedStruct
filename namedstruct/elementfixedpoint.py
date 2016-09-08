@@ -157,4 +157,4 @@ class ElementFixedPoint(Element):
 
     def make(self, msg):
         """Return bytes of the expected format"""
-        return self._struct.pack(msg[self.name])
+        return self.pack(msg)
