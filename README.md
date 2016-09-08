@@ -67,7 +67,7 @@ MyMessage = Message('message_name', [
                                                       # as a floating point number
     ('union_identifier', 'B', MyEnum),
     ('like_a_c_union', {
-        MyEnum.my_custom_data_type: SizeOfData,       # These sizes should all be the same,
+        MyEnum.my_custom_data_type: SizeOfData,       # These sizes should usually all be the same,
         MyEnum.my_other_data_type: AnotherDataSize,   # but they can be of different styles!
         MyEnum.final_data_type: SizeOfData,
     }, 'union_identifier'),                           # Choose which type of thing based on union_identifier
