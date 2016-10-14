@@ -11,7 +11,11 @@ if os.path.exists('README.rst'):
     README = open('README.rst').read()
 else:
     README = ""  # a placeholder, readme is generated on release
-CHANGES = open('CHANGES.md').read()
+
+try:
+    CHANGES = open('CHANGES.md').read()
+except:
+    CHANGES = ""
 
 
 setuptools.setup(
