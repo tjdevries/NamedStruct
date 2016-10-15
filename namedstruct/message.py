@@ -1,26 +1,24 @@
-"""NamedStruct class."""
+"""An object much like NamedTuple, but with additional formatting."""
 
 import collections
 import struct
-import namedstruct.modes
+from typing import List, Optional, Tuple
+
+from namedstruct.modes import Mode
 from namedstruct.element import Element
 
 
 # pylint: disable=line-too-long
 class Message(object):
-    """An object much like NamedTuple, but with additional formatting."""
+    """
+    Creates 2 internal items, a format string which is used to call the
+    struct module functions for packing and unpacking data, and a
+    namedtuple instance which is used to organize the data provided to the
+    pack functions and returned from the unpack functions.
+    """
 
     # pylint: disable=too-many-branches
-    def __init__(self, name, fields, mode=namedstruct.modes.Mode.Native, alignment=1):
-        """
-        Initialize a NamedStruct object.
-
-        Creates 2 internal items, a format string which is used to call the
-        struct module functions for packing and unpacking data, and a
-        namedtuple instance which is used to organize the data provided to the
-        pack functions and returned from the unpack functions.
-        """
-
+    def __init__(self, name: str, fields: List[Tuple], mode: Mode=Mode.Native, alignment: Optional[int]=1) -> None:
         # The name must be a string, this is provided to the
         # collections.namedtuple constructor when creating the namedtuple class.
         if not name or not isinstance(name, str):
@@ -37,13 +35,13 @@ class Message(object):
                 or not all(isinstance(x, tuple) for x in fields):
             raise TypeError('invalid fields: {}'.format(fields))
 
-        if not isinstance(mode, namedstruct.modes.Mode):
+        if not isinstance(mode, Mode):
             raise TypeError('invalid mode: {}'.format(mode))
 
         # Create an ordered dictionary (so element order is preserved) out of
         # the individual message fields.  Ensure that there are no duplicate
         # field names.
-        self._elements = collections.OrderedDict()
+        self._elements = collections.OrderedDict()  # type: collections.OrderedDict
         for field in fields:
             if field[0] not in self._elements:
                 if isinstance(field[0], str):
@@ -64,20 +62,27 @@ class Message(object):
         named_fields = [elem.name for elem in self._elements.values() if elem.name]
         self._tuple = collections.namedtuple(self.name, named_fields)
 
-    def update(self, mode=None, alignment=None):
-        """ Change the mode of a message. """
-        if mode and not isinstance(mode, namedstruct.modes.Mode):
+    def update(self, mode: Optional[Mode]=None, alignment: Optional[int]=1) -> None:
+        """ Change the mode of a message.
+
+        :param mode: The mode to set the Message to
+
+        :raises: TypeError
+        """
+        if not isinstance(mode, Mode):
             raise TypeError('invalid mode: {}'.format(mode))
 
         # Change the mode for all elements
         for key in self._elements.keys():
             self._elements[key].update(mode, alignment)
 
-    def is_unpacked(self, other):
+    def is_unpacked(self, other: Tuple) -> bool:
         """
         Provide a function that allows checking if an unpacked message tuple
         is an instance of what could be unpacked from a particular message
         object.
+
+        :param other: TODO not sure what this is
         """
         # First check to see if the passed in object is a namedtuple
         # that matches this message type
