@@ -1,74 +1,84 @@
-"""NamedStruct element class."""
-# pylint: disable=line-too-long
+"""
+The variable NamedStruct element class.
+Can be used in multiple ways ways:
 
-import struct
-
-import namedstruct
-from namedstruct.element import register, Element
-from namedstruct.modes import Mode
+1: Variable Lengths, in terms of namedstruct elements
 
 
-@register
-class ElementVariable(Element):
-    """
-    The variable NamedStruct element class.
-    Can be used in multiple ways ways:
+    .. code-block:: python
 
-    1) ------------------------------------------------------------------------
-    Variable Lengths, in terms of namedstruct elements
+        ExampleMessage = Message('VarTest', [('x', 'B'), ('y', 'B')])
 
-    NOTE: The length item is specified as a string, not as bytes
+        message_struct = [
+            ('length_in_objects', 'H', 'vardata'),            # length field
+            ('vardata', ExampleMessage, 'length_in_objects')  # variable length data
+        ]
 
-    ExampleMessage = Message('VarTest', [('x', 'B'), ('y', 'B')])
-
-    message_struct = [
-        ('length_in_objects', 'H', 'vardata'),            # length field
-        ('vardata', ExampleMessage, 'length_in_objects')  # variable length data
-    ]
-
-    Note that length is the string and you can think of it as "linking" to the
+    The length is the string and you can think of it as "linking" to the
     length that is provided in the length field.
 
-    2) ------------------------------------------------------------------------
-    Variable lengths, in terms of byte size
+    .. note:: The length item is specified as a string, not as bytes
 
-    NOTE: The length item is specified as bytes, not as a string
+2: Variable lengths, in terms of byte size
 
-    SomeMessage = namedstruct.Message(...)
 
-    message_struct = [
-        (b'length_in_bytes', 'B', 'vardata'),
-        ('vardata', SomeMessage, b'length_in_bytes'),
-    ]
+    .. code-block:: python
+
+        SomeMessage = namedstruct.Message(...)
+
+        message_struct = [
+            (b'length_in_bytes', 'B', 'vardata'),
+            ('vardata', SomeMessage, b'length_in_bytes'),
+        ]
 
     Now if our program specifies taht we should have a length in bytes field
     we can say 'length_in_bytes' = 8, while only have 2 SomeMessage, (assuming
     that the length of SomeMessge == 4).
 
-    3) ------------------------------------------------------------------------
-    Fixed length, in terms of namedstruct elements
+    .. note:: The length item is specified as bytes, not as a string
 
-    RepeatedMessage = Message('Repeated', [('x', 'B'), ('y', 'H')])
+3: Fixed length, in terms of namedstruct elements
 
-    message_struct = [
-        ('repeated_data', RepeatedMessage, 3),
-    ]
+    .. code-block:: python
+
+        RepeatedMessage = Message('Repeated', [('x', 'B'), ('y', 'H')])
+
+        message_struct = [
+            ('repeated_data', RepeatedMessage, 3),
+        ]
 
     Now we provide an integer that tells us that there will ALWAYS be that
     many messages in this message. You also no longer need to have another
     field that specifies the number of these messages.
 
-    4) ------------------------------------------------------------------------
-    TODO: Fixed length, in terms of bytes?
+4: Fixed length, in terms of bytes?
+
+    TODO: write this
 
     Might have something that can only fit a certain number of bytes, like a
     CAN message, and this would break it up automatically?
+"""
 
+
+import struct
+
+from typing import Optional
+
+import namedstruct
+from namedstruct.element import Element
+from namedstruct.modes import Mode
+
+
+class ElementVariable(Element):
+    """
+    Initialize a NamedStruct element object.
+
+    :param field: The fields passed into the constructor of the element
+    :param mode: The mode in which to pack the bytes
     """
 
-    def __init__(self, field, mode=Mode.Native, alignment=1):
-        """Initialize a NamedStruct element object."""
-
+    # pylint: disable=unused-argument
+    def __init__(self, field: tuple, mode: namedstruct.modes.Mode, alignment: int=1):
         # All of the type checks have already been performed by the class
         # factory
         self.name = field[0]
@@ -100,13 +110,15 @@ class ElementVariable(Element):
         self.update(mode, alignment)
 
     @staticmethod
-    def valid(field):
+    def valid(field: tuple) -> bool:
         """
         Validation function to determine if a field tuple represents a valid
         enum element type.
 
         The basics have already been validated by the Element factory class,
         validate that the struct format is a valid numeric value.
+
+        :param field: The fields passed in to construct the message
         """
         return len(field) == 3 \
             and isinstance(field[1], namedstruct.message.Message) \
@@ -138,14 +150,20 @@ class ElementVariable(Element):
                 err = 'fixed repetition field {} reference {} not an integer'
                 raise TypeError(err.format(self.name, self.ref))
 
-    def update(self, mode=None, alignment=None):
-        """change the mode of the struct format"""
+    def update(self, mode: Optional[Mode]=None, alignment: Optional[int]=None) -> None:
+        """change the mode of the struct format
+
+        :param mode: The mode that the bytes will now be packed in
+        """
         self._mode = mode
         self._alignment = alignment
         self.format.update(mode, alignment)
 
-    def pack(self, msg):
-        """Pack the provided values into the supplied buffer."""
+    def pack(self, msg: dict):
+        """Pack the provided values into the supplied buffer.
+
+        :param msg: The message with the values to pack
+        """
         # When packing use the length of the current element to determine
         # how many elements to pack, not the length element of the message
         # (which should not be specified manually).
@@ -175,8 +193,12 @@ class ElementVariable(Element):
         # messages that have been packed.
         return b''.join(ret)
 
-    def unpack(self, msg, buf):
-        """Unpack data from the supplied buffer using the initialized format."""
+    def unpack(self, msg: dict, buf: bytes):
+        """Unpack data from the supplied buffer using the initialized format.
+
+        :param msg: The message with the values to unpack
+        :param buf: The currently unused bytes from the message
+        """
         # When unpacking a variable element, reference the already unpacked
         # length field to determine how many elements need unpacked.
         ret = []
@@ -197,8 +219,11 @@ class ElementVariable(Element):
         # by the individual messages that have been unpacked.
         return (ret, unused)
 
-    def make(self, msg):
-        """Return the expected "made" value"""
+    def make(self, msg: dict):
+        """Return the expected "made" value
+
+        :param msg: The message containing the required values
+        """
         ret = []
         for val in msg[self.name]:
             ret.append(self.format.make(val))

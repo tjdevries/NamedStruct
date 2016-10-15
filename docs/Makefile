@@ -50,7 +50,7 @@ clean:
 	rm -rf $(BUILDDIR)/*
 
 .PHONY: html
-html:
+html: autodoc
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
@@ -221,7 +221,7 @@ pseudoxml:
 
 .PHONY: autodoc
 autodoc:
-	sphinx-apidoc -f -o ./source ../
+	sphinx-apidoc -f -o ./source ../ -e
 
 
 .PHONY: dummy
