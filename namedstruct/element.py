@@ -5,6 +5,7 @@ import namedstruct
 
 def register(cls):
     """ A handy decorator to register a class as an element """
+    print('Registering class: ', cls)
     Element.register(cls)
     return cls
 

@@ -21,6 +21,19 @@ try:
     assert Message
     assert Mode
 
+    # Hack to import all the element files and get them registered
+    # import importlib
+    # import glob
+    # import os
+
+    # print('printing file names')
+    # print(os.path.dirname(os.path.abspath(__file__)) + '/element*')
+    # for file in glob.glob(os.path.dirname(os.path.abspath(__file__)) + '/element*'):
+    #     print(file.split(os.sep)[-1][:-3])
+
+    #     mod = importlib.import_module('namedstruct.' + file)
+    #     mod.__name__
+
     __all__ = ['Message', 'Mode']
 except ImportError:  # pragma: no cover (manual test)
     pass

@@ -1,74 +1,15 @@
-"""
-The variable NamedStruct element class.
-Can be used in multiple ways ways:
-
-1: Variable Lengths, in terms of namedstruct elements
-
-
-    .. code-block:: python
-
-        ExampleMessage = Message('VarTest', [('x', 'B'), ('y', 'B')])
-
-        message_struct = [
-            ('length_in_objects', 'H', 'vardata'),            # length field
-            ('vardata', ExampleMessage, 'length_in_objects')  # variable length data
-        ]
-
-    The length is the string and you can think of it as "linking" to the
-    length that is provided in the length field.
-
-    .. note:: The length item is specified as a string, not as bytes
-
-2: Variable lengths, in terms of byte size
-
-
-    .. code-block:: python
-
-        SomeMessage = namedstruct.Message(...)
-
-        message_struct = [
-            (b'length_in_bytes', 'B', 'vardata'),
-            ('vardata', SomeMessage, b'length_in_bytes'),
-        ]
-
-    Now if our program specifies taht we should have a length in bytes field
-    we can say 'length_in_bytes' = 8, while only have 2 SomeMessage, (assuming
-    that the length of SomeMessge == 4).
-
-    .. note:: The length item is specified as bytes, not as a string
-
-3: Fixed length, in terms of namedstruct elements
-
-    .. code-block:: python
-
-        RepeatedMessage = Message('Repeated', [('x', 'B'), ('y', 'H')])
-
-        message_struct = [
-            ('repeated_data', RepeatedMessage, 3),
-        ]
-
-    Now we provide an integer that tells us that there will ALWAYS be that
-    many messages in this message. You also no longer need to have another
-    field that specifies the number of these messages.
-
-4: Fixed length, in terms of bytes?
-
-    TODO: write this
-
-    Might have something that can only fit a certain number of bytes, like a
-    CAN message, and this would break it up automatically?
-"""
-
-
 import struct
 
 from typing import Optional
 
-import namedstruct
-from namedstruct.element import Element
+from namedstruct.element import register, Element
+from namedstruct.message import Message
 from namedstruct.modes import Mode
 
+print('ELEMENT VARIABLE')
 
+
+@register
 class ElementVariable(Element):
     """
     Initialize a NamedStruct element object.
@@ -78,7 +19,7 @@ class ElementVariable(Element):
     """
 
     # pylint: disable=unused-argument
-    def __init__(self, field: tuple, mode: namedstruct.modes.Mode, alignment: int=1):
+    def __init__(self, field: tuple, mode: Optional[Mode]=Mode.Native, alignment: Optional[int]=1):
         # All of the type checks have already been performed by the class
         # factory
         self.name = field[0]
@@ -121,7 +62,7 @@ class ElementVariable(Element):
         :param field: The fields passed in to construct the message
         """
         return len(field) == 3 \
-            and isinstance(field[1], namedstruct.message.Message) \
+            and isinstance(field[1], Message) \
             and isinstance(field[2], (str, int, bytes))
 
     def validate(self, msg):
