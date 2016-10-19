@@ -3,3 +3,4 @@ Sphinx
 # sphinx-autodoc-napoleon-typehints
 sphinx_rtd_theme
 sphinx-autodoc-typehints
+mypy-lang

@@ -1,16 +1,17 @@
 """NamedStruct element class."""
 
 import namedstruct
-from namedstruct.element import Element
+from namedstruct.element import register, Element
+from namedstruct.modes import Mode
 
 
+@register
 class ElementDiscriminated(Element):
     """
     The discriminated NamedStruct element class.
     """
 
-    # pylint: disable=unused-argument
-    def __init__(self, field, mode):
+    def __init__(self, field, mode=Mode.Native, alignment=1):
         """Initialize a NamedStruct element object."""
 
         # All of the type checks have already been performed by the class
@@ -25,7 +26,7 @@ class ElementDiscriminated(Element):
         self.format = field[1]
 
         # but change the mode to match the current mode.
-        self.changemode(mode)
+        self.update(mode, alignment)
 
     @staticmethod
     def valid(field):
@@ -42,12 +43,41 @@ class ElementDiscriminated(Element):
             and all(isinstance(val, (namedstruct.message.Message, type(None)))
                     for val in field[1].values())
 
-    def changemode(self, mode):
+    def validate(self, msg):
+        """
+        Ensure that the supplied message contains the required information for
+        this element object to operate.
+
+        All Discriminated elements must reference valid Enum elements, and the
+        keys of the discriminated format must be valid instances of the
+        referenced Enum class.
+        """
+        from namedstruct.elementenum import ElementEnum
+        if not isinstance(msg[self.ref], ElementEnum):
+            err = 'discriminated field {} reference {} invalid type'
+            raise TypeError(err.format(self.name, self.ref))
+        elif not all(isinstance(key, msg[self.ref].ref)
+                     for key in self.format.keys()):
+            err = 'discriminated field {} reference {} mismatch'
+            raise TypeError(err.format(self.name, self.ref))
+        else:
+            for key in self.format.keys():
+                try:
+                    ref_cls = msg[self.ref].ref
+                    assert ref_cls(key)
+                except:
+                    err = 'discriminated field {} key {} not a valid {}'
+                    msg = err.format(self.name, key, self.ref)
+                    raise TypeError(msg)
+
+    def update(self, mode=None, alignment=None):
         """change the mode of each message format"""
         self._mode = mode
+        self._alignment = alignment
+
         for key in self.format.keys():
             if self.format[key] is not None:
-                self.format[key].changemode(mode)
+                self.format[key].update(mode, alignment)
 
     def pack(self, msg):
         """Pack the provided values into the supplied buffer."""
@@ -61,11 +91,16 @@ class ElementDiscriminated(Element):
 
         if self.format[msg[self.ref]] is not None:
             if msg[self.name] is not None:
-                return self.format[msg[self.ref]].pack(dict(msg[self.name]))
+                data = self.format[msg[self.ref]].pack(dict(msg[self.name]))
             else:
-                return self.format[msg[self.ref]].pack({})
+                data = self.format[msg[self.ref]].pack({})
         else:
-            return b''
+            data = b''
+
+        # There is no need to make sure that the packed data is properly
+        # aligned, because that should already be done by the individual
+        # messages that have been packed.
+        return data
 
     def unpack(self, msg, buf):
         """Unpack data from the supplied buffer using the initialized format."""
@@ -73,6 +108,10 @@ class ElementDiscriminated(Element):
         # enum field to determine how many elements need unpacked.  If the
         # specific value is None rather than a Message object, return no new
         # parsed data.
+        #
+        # There is no need to make sure that the unpacked data consumes a
+        # properly aligned number of bytes because that should already be done
+        # by the message that is unpacked.
         #
         # Use the getattr() function since the referenced value is an enum
         if self.format[getattr(msg, self.ref)] is not None:
