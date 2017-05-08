@@ -130,3 +130,6 @@ class ElementEnum(Element):
         else:
             enum_item = self.ref(item)
         return enum_item
+
+    def generate(self, file_type):
+        return super(ElementEnum, self).generate(file_type, {'enum': self.ref})

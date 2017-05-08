@@ -2,8 +2,13 @@
 
 from typing import Optional, Tuple
 
+from jinja2 import Environment, PackageLoader
+
 from starstruct.modes import Mode
 
+env = Environment(
+    loader=PackageLoader('starstruct', 'templates')
+)
 
 def register(cls):
     """ A handy decorator to register a class as an element """
@@ -164,3 +169,9 @@ class Element(object):
         :todo: How do I specify the correct type for this?
         """
         raise NotImplementedError
+
+    def generate(self, file_type, args):
+        return env.get_template('{0}.{1}.jinja'.format(
+                                    file_type,
+                                    self.__class__.__name__.lower())
+                                ).render(**args)
